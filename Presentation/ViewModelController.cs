@@ -1,10 +1,43 @@
 ﻿using System.Diagnostics;
+using WPF_MVVM_TEMPLATE.Entitys;
 using WPF_MVVM_TEMPLATE.Presentation.ViewModel;
 
 namespace WPF_MVVM_TEMPLATE.Presentation
 {
     public class ViewModelController : IViewModelController
     {
+        
+        private static Dictionary<string, object> _sessionData = new Dictionary<string, object>();
+
+        public Dictionary<string, object> SessionData
+        {
+            get { return _sessionData; }
+        }
+
+        public void AddSesionDate(string identifyer, object data)
+        {
+            if (_sessionData.ContainsKey(identifyer))
+            {
+                _sessionData[identifyer] = data;
+            }
+            
+            _sessionData.Add(identifyer, data);
+            
+        }
+        
+        public object GetSesionDate(string identifyer)
+        {
+
+            if (_sessionData.ContainsKey(identifyer))
+            {
+                return _sessionData[identifyer];
+            }
+
+            return null;
+
+        }
+        
+        
         // Static field to hold the singleton instance
         private static ViewModelController? _instance;
 

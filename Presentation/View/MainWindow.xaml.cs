@@ -1,4 +1,6 @@
 ﻿using System.Windows;
+using WPF_MVVM_TEMPLATE.Application;
+using WPF_MVVM_TEMPLATE.Infrastructure;
 using WPF_MVVM_TEMPLATE.Presentation.ViewModel;
 
 namespace WPF_MVVM_TEMPLATE.Presentation.View;
@@ -12,11 +14,21 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = ((App)App.Current);
-        
-        new AdminPanelViewModel();
-        ViewModelController.Instance.SetCurrentViewModel(typeof(AdminPanelViewModel));
+        new SettingsViewModel();
+        new BrowserViewModel();
+        ViewModelController.Instance.SetCurrentViewModel(typeof(BrowserViewModel));
         
     }
-    
-    
+
+
+    private void MenuItem_Settings_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModelController.Instance.SetCurrentViewModel(typeof(SettingsViewModel));
+    }
+
+
+    private void MenuItem_Home_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModelController.Instance.SetCurrentViewModel(typeof(BrowserViewModel));
+    }
 }

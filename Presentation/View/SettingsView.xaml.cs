@@ -2,9 +2,9 @@
 
 namespace WPF_MVVM_TEMPLATE.Presentation.View;
 
-public partial class AdminPanelView : UserControl
+public partial class SettingsView : UserControl
 {
-    public AdminPanelView()
+    public SettingsView()
     {
         InitializeComponent();
     }
