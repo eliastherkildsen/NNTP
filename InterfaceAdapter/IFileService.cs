@@ -1,4 +1,4 @@
-﻿namespace WPF_MVVM_TEMPLATE.InterfaceAdapter;
+﻿namespace NNTP_NEWS_CLIENT.InterfaceAdapter;
 
 public interface IFileService
 {

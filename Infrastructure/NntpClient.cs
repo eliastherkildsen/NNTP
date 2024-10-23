@@ -1,86 +1,121 @@
 ﻿using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using WPF_MVVM_TEMPLATE.InterfaceAdapter;
+using System.Text.Json.Nodes;
+using NNTP_NEWS_CLIENT.Entitys;
+using NNTP_NEWS_CLIENT.InterfaceAdapter;
 
-namespace WPF_MVVM_TEMPLATE.Infrastructure
+namespace NNTP_NEWS_CLIENT.Infrastructure
 {
     public class NntpClient : IClient
     {
        
-        private TcpClient _tcpClient;
-        private NetworkStream _networkStream;
-        private StreamReader _streamReader;
-        private StreamWriter _streamWriter;
-        private Encoding _encoding = Encoding.ASCII;
+        private TcpClient      _tcpClient;
+        private NetworkStream  _networkStream;
+        private StreamReader   _streamReader;
+        private StreamWriter   _streamWriter;
+        private Encoding       _encoding = Encoding.ASCII;
         
-        public int Connect(string address, int port)
-        {
-            return SetupTcpClient(address, port);
-        }
-
         public int Disconnect()
         {
-            _streamWriter?.Close();
-            _streamReader?.Close();
-            _streamWriter?.Dispose();
-            _streamReader?.Dispose();
-            _tcpClient?.Close();
-            _tcpClient?.Dispose();
-            
-            return 200;
-        }
 
-        public int Send(string command)
-        {
-            
-            // validating client
-            if (_tcpClient == null || !_tcpClient.Connected)
+            try
             {
-                Console.WriteLine("The client is not connected.");
-                return -1;
+                _streamWriter?.Close();
+                _streamReader?.Close();
+                _streamWriter?.Dispose();
+                _streamReader?.Dispose();
+                _tcpClient?.Close();
+                _tcpClient?.Dispose();
+                return 200;
             }
-            
-            // validating the streamwriter. 
-            if (_streamWriter == null)
+            catch (Exception e)
             {
-                Console.WriteLine("The stream writer is not initialized.");
+                Console.WriteLine(e);
                 return -1; 
             }
             
-            // validating streamreader 
+            
+        }
+
+        public async Task<NntpRespons> SendAsync(string command)
+        {
+            // Validating client
+            if (_tcpClient == null || !_tcpClient.Connected)
+            {
+                Console.WriteLine("The client is not connected.");
+                return new NntpRespons(500);
+            }
+
+            // Validating streamwriter
+            if (_streamWriter == null)
+            {
+                Console.WriteLine("The stream writer is not initialized.");
+                return new NntpRespons(500);
+            }
+
+            // Validating streamreader
             if (_streamReader == null)
             {
                 Console.WriteLine("The stream reader is not initialized.");
-                return -1;
+                return new NntpRespons(500);
             }
-            
-            // validating command. 
-            if (command == null || command.Length == 0)
+
+            // Validating command
+            if (string.IsNullOrEmpty(command))
             {
                 Console.WriteLine("The command is empty.");
-                return -1;
+                return new NntpRespons(500);
             }
             
-            _streamWriter.WriteLine(command);
-            string response = _streamReader.ReadLine();
             
-            // informing user.
-            Console.WriteLine($"Got this response from send message. {response}");
 
-            if (response != null) return FetchResponseCode(response);
-            return -1;
+            // Send the command to the server
+            await _streamWriter.WriteLineAsync(command);
+            
+            // Read the first line (response code and possibly part of the data)
+            var response = await _streamReader.ReadLineAsync();
+            if (response == null)
+            {
+                return new NntpRespons(500); // Error handling: No response received
+            }
+
+            // Fetch and validate the response code
+            int responseCode = FetchResponseCode(response);
+            string Delimiter = "<Delimiter>"; 
+            // Initialize a StringBuilder to accumulate multi-line responses
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine(response + Delimiter);
+
+            // Check if the response indicates that additional data follows
+            if (responseCode != 224)
+            {
+                return new NntpRespons(responseCode, stringBuilder.ToString());
+            }
+
+            // Read additional lines if this is a multi-line response
+            string line;
+            while ((line = await _streamReader.ReadLineAsync()) != null)
+            {
+                if (line == ".") // End of multi-line response
+                {
+                    break;
+                }
+                stringBuilder.AppendLine(line + Delimiter);
+            }
+            
+            // Return the complete response
+            return new NntpRespons(responseCode, stringBuilder.ToString());
         }
         
-        private int SetupTcpClient(string address, int port)
+        public async Task<NntpRespons> ConnectAsync(string address, int port)
         {
             
             try
             {
                 // setting up the tcpclient. 
                 _tcpClient = new TcpClient();
-                _tcpClient.Connect(address, port);
+                await _tcpClient.ConnectAsync(address, port);
                 
                 // setting up streams 
                 _networkStream = _tcpClient.GetStream();
@@ -89,28 +124,39 @@ namespace WPF_MVVM_TEMPLATE.Infrastructure
                 _streamWriter.AutoFlush = true;
                 
                 // read respons from tcp client. 
-                var response = _streamReader.ReadLine();
-                var responsCode = FetchResponseCode(response);
+                var response = await _streamReader.ReadLineAsync();
                 
-                Console.WriteLine($"Connected to {address}:{port} with response code {responsCode}");
-                return responsCode;
+                // validating respons. 
+                if (response != null)
+                {
+                    var responsCode = FetchResponseCode(response);
+                    Console.WriteLine($"Connected to {address}:{port} with response code {responsCode}");
+                    return new NntpRespons(responsCode);
+                }
+                
+                return new NntpRespons(500);
+                
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                return -1;
+                return new NntpRespons(500);
             }
             
         }
 
-        private int FetchResponseCode(string response)
+        public static int FetchResponseCode(string response)
         {
-            if (response.Length < 3) throw new Exception("Invalid response from server.");
+            // null check
+            if (response == null) return 500; 
+            
+            // min length check 
+            if (response.Length < 3) return 500;
 
             string responseCode = response.Substring(0, 3);
             if (!int.TryParse(responseCode, out int code))
             {
-                throw new Exception("Failed to parse response code.");
+                return 500; 
             }
             return code;
         }

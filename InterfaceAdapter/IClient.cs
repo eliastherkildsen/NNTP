@@ -1,8 +1,10 @@
-﻿namespace WPF_MVVM_TEMPLATE.InterfaceAdapter;
+﻿using NNTP_NEWS_CLIENT.Entitys;
+
+namespace NNTP_NEWS_CLIENT.InterfaceAdapter;
 
 public interface IClient
 {
-    int Connect(string address, int port);
-    int Send(string command);
+    Task<NntpRespons> ConnectAsync(string address, int port);
+    Task<NntpRespons> SendAsync(string command);
     int Disconnect();
 }

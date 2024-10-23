@@ -1,23 +1,36 @@
 ﻿using System.Windows.Input;
-using WPF_MVVM_TEMPLATE.Application;
-using WPF_MVVM_TEMPLATE.Infrastructure;
-using WPF_MVVM_TEMPLATE.InterfaceAdapter;
+using NNTP_NEWS_CLIENT.Application;
+using NNTP_NEWS_CLIENT.Infrastructure;
+using NNTP_NEWS_CLIENT.InterfaceAdapter;
 
-namespace WPF_MVVM_TEMPLATE.Presentation.ViewModel;
+namespace NNTP_NEWS_CLIENT.Presentation.ViewModel;
 
 public class BrowserViewModel : ViewModelBase
 {
     
     private IClient _client;
     
+    #region Fetch group
+    public ICommand FetchGroupCommand => new CommandBase(FetchGroup);
+
+    private async void FetchGroup(object obj)
+    {
+        var groupName = (string)ViewModelController.Instance.GetSesionDate("GROUP"); 
+        var fetchGroup = new FetchGroup(); 
+        await fetchGroup.FetchArticlesForGroupInfo(_client, groupName);
+        await fetchGroup.GetArticlesForGroup(_client, groupName);
+    }
+
+    #endregion
+    
+    # region Establish Connection 
     public ICommand EstablishConnectionCommand => new CommandBase(EstablishConnection, CanEstablishConnection);
 
     private bool CanEstablishConnection(object arg)
     {
         return HasSessionData();
     }
-
-    private void EstablishConnection(object obj)
+    private async void EstablishConnection(object obj)
     {
         // Fetching sessiondata
         var username = FetchSessionData("USERNAME");
@@ -28,19 +41,21 @@ public class BrowserViewModel : ViewModelBase
         
         // crating the client.
         _client = new NntpClient();
-        var establishConnectionUc = new EstablishConnectionUC();
+        var establishConnectionUc = new EstablishConnectionUC(_client);
         
-        var response = establishConnectionUc.Connect((string) host, (int) port);
-        if (response != 200)
+        var response = await establishConnectionUc.ConnectAsync((string) host, (int) port);
+        if (response.ResponseCode != 200)
         {
             Console.WriteLine($"Recived respons when trying create connection {response}");
             return;
         }
         
         _client = establishConnectionUc.Client;
+
+
+        response = await establishConnectionUc.AuthenticateUserAsync((string)username, (string)password); 
         
-        response = establishConnectionUc.AuthenticateUser((string)username, (string) password);
-        if (response != 281) // (281) connection established
+        if (response.ResponseCode != 281) // (281) connection established
         {
             Console.WriteLine($"Recived respons when trying create connection {response}");
             return;
@@ -48,10 +63,9 @@ public class BrowserViewModel : ViewModelBase
         
         // storing the clint for later use. 
         
-        Console.WriteLine($"Authenticated user {username.ToString()}");
+        Console.WriteLine($"Authenticated user {username.ToString()}, client ready to use");
         
     }
-
     private bool HasSessionData()
     {
         var sessionData = ViewModelController.Instance.SessionData;
@@ -73,5 +87,8 @@ public class BrowserViewModel : ViewModelBase
             return null;
         }
     }
+    
+    # endregion
+    
     
 }

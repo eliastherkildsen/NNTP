@@ -1,4 +1,4 @@
-﻿namespace WPF_MVVM_TEMPLATE.Entitys;
+﻿namespace NNTP_NEWS_CLIENT.Entitys;
 
 public class Item
 {

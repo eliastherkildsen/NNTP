@@ -1,4 +1,4 @@
-﻿namespace WPF_MVVM_TEMPLATE.Application;
+﻿namespace NNTP_NEWS_CLIENT.Application;
 
 public class UseCase
 {

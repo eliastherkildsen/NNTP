@@ -1,11 +1,11 @@
 ﻿using System.Windows.Input;
 
-namespace WPF_MVVM_TEMPLATE.Presentation.ViewModel;
+namespace NNTP_NEWS_CLIENT.Presentation.ViewModel;
 
 public class SettingsViewModel : ViewModelBase
 {
-
-
+    
+    
     private string _userName = "elithe01@easv365.dk";
     public string Username 
     {
@@ -42,6 +42,17 @@ public class SettingsViewModel : ViewModelBase
         }
     }
     
+    private string _newsGroup = "dk.test"; 
+    public string NewsGroup 
+    {
+        get { return _newsGroup; }
+        set {
+            _newsGroup = value;
+            OnPropertyChanged();
+        }  
+    }
+    
+    
     public SettingsViewModel()
     {
         ViewModelController.Instance.SetCurrentViewModel(typeof(SettingsViewModel));
@@ -60,6 +71,16 @@ public class SettingsViewModel : ViewModelBase
         return !string.IsNullOrEmpty(host);
     }
 
+    private bool IsPortValid(int port)
+    {
+        return (port > 0);
+    }
+
+    private bool IsNewsGroupValid(string newsGroup)
+    {
+        return !string.IsNullOrEmpty(newsGroup);
+    }
+
     public ICommand ChangeToBrowserViewCommand => new CommandBase(ChangeToBrowserView);
 
     private void ChangeToBrowserView(object obj)
@@ -75,12 +96,18 @@ public class SettingsViewModel : ViewModelBase
         ViewModelController.Instance.AddSesionDate("PASSWORD", Password);
         ViewModelController.Instance.AddSesionDate("PORT", Port);
         ViewModelController.Instance.AddSesionDate("HOST", Host);
+        ViewModelController.Instance.AddSesionDate("GROUP", NewsGroup);
         
         
     }
     private bool CanEstablishClient(object o)
     {
-        return (IsHostValid(Host) && IsPasswordValid(Password) && IsUsernameValid(Username));
+        return (
+            IsHostValid(Host) && 
+            IsPasswordValid(Password) &&
+            IsUsernameValid(Username) && 
+            IsPortValid(Port) && 
+            IsNewsGroupValid(NewsGroup));
     }
     
    

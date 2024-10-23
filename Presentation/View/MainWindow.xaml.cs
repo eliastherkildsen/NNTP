@@ -1,9 +1,9 @@
 ﻿using System.Windows;
-using WPF_MVVM_TEMPLATE.Application;
-using WPF_MVVM_TEMPLATE.Infrastructure;
-using WPF_MVVM_TEMPLATE.Presentation.ViewModel;
+using NNTP_NEWS_CLIENT.Presentation.ViewModel;
+using NNTP_NEWS_CLIENT.Application;
+using NNTP_NEWS_CLIENT.Infrastructure;
 
-namespace WPF_MVVM_TEMPLATE.Presentation.View;
+namespace NNTP_NEWS_CLIENT.Presentation.View;
 
 /// <summary>
 /// Interaction logic for MainWindow.xaml
