@@ -85,8 +85,11 @@ namespace NNTP_NEWS_CLIENT.Infrastructure
             string Delimiter = "<Delimiter>"; 
             // Initialize a StringBuilder to accumulate multi-line responses
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine(response + Delimiter);
-
+            stringBuilder.Append(response + Delimiter);
+            
+            StringBuilder stringBuilder2 = new StringBuilder();
+            stringBuilder2.Append(response + Delimiter);
+            
             // Check if the response indicates that additional data follows
             if (responseCode != 224)
             {
@@ -101,8 +104,11 @@ namespace NNTP_NEWS_CLIENT.Infrastructure
                 {
                     break;
                 }
-                stringBuilder.AppendLine(line + Delimiter);
+                stringBuilder.Append(line + Delimiter);
+                //stringBuilder2.Append(line + Delimiter);
             }
+            
+            WriteToASCIIFile(stringBuilder2);
             
             // Return the complete response
             return new NntpRespons(responseCode, stringBuilder.ToString());
@@ -159,6 +165,20 @@ namespace NNTP_NEWS_CLIENT.Infrastructure
                 return 500; 
             }
             return code;
+        }
+
+        private void WriteToASCIIFile(StringBuilder stringBuilder)
+        {
+            // Specify the file path
+            string filePath = "TestData.txt";
+
+            // Write ASCII values to a file
+            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.ASCII))
+            {
+                writer.Write(stringBuilder.ToString());
+            }
+
+            Console.WriteLine("ASCII values written to file: " + filePath);
         }
         
         

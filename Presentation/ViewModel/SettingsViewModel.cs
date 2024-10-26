@@ -42,7 +42,7 @@ public class SettingsViewModel : ViewModelBase
         }
     }
     
-    private string _newsGroup = "dk.test"; 
+    private string _newsGroup = "rec.audio.pro"; 
     public string NewsGroup 
     {
         get { return _newsGroup; }

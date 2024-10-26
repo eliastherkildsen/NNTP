@@ -1,7 +1,10 @@
-﻿using System.Windows.Input;
+﻿using System.Collections.ObjectModel;
+using System.Windows.Input;
 using NNTP_NEWS_CLIENT.Application;
+using NNTP_NEWS_CLIENT.Entitys;
 using NNTP_NEWS_CLIENT.Infrastructure;
 using NNTP_NEWS_CLIENT.InterfaceAdapter;
+using WPF_MVVM_TEMPLATE.Entitys;
 
 namespace NNTP_NEWS_CLIENT.Presentation.ViewModel;
 
@@ -9,6 +12,19 @@ public class BrowserViewModel : ViewModelBase
 {
     
     private IClient _client;
+    private ObservableCollection<Article> _articleList = new ObservableCollection<Article>();
+
+    public ObservableCollection<Article> ArticleList
+    {
+        get { return _articleList; }
+        set {
+            _articleList = value; 
+            OnPropertyChanged();
+            
+        }
+    }
+    
+    
     
     #region Fetch group
     public ICommand FetchGroupCommand => new CommandBase(FetchGroup);
@@ -16,9 +32,22 @@ public class BrowserViewModel : ViewModelBase
     private async void FetchGroup(object obj)
     {
         var groupName = (string)ViewModelController.Instance.GetSesionDate("GROUP"); 
-        var fetchGroup = new FetchGroup(); 
-        await fetchGroup.FetchArticlesForGroupInfo(_client, groupName);
-        await fetchGroup.GetArticlesForGroup(_client, groupName);
+        var loadGroup = new LoadGroup(_client, groupName);
+        var group = await loadGroup.FetchGroupInfo(_client, groupName);
+        
+        var loadArticle = new LoadArticle(_client);
+        loadArticle.GetArticlesForGroup();
+        var articles = await loadArticle.GetArticlesForGroup();
+        
+        Console.WriteLine("Fetch command called!");
+        Console.WriteLine($"{articles.Count} articles found when adding to obs. list");
+        
+        foreach (var artical in articles)
+        {
+            //Console.WriteLine("Added Artical to obs. list");
+            ArticleList.Add(artical);
+        }
+        
     }
 
     #endregion
