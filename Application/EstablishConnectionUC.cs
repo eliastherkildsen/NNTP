@@ -8,11 +8,6 @@ public class EstablishConnectionUC
 {
 
     public IClient Client;
-
-    public EstablishConnectionUC(IClient client)
-    {
-        Client = client;
-    }
     
     public async Task<NntpRespons> ConnectAsync(string address, int port)
     {

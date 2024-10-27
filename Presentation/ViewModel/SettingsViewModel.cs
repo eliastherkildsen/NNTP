@@ -1,4 +1,7 @@
-﻿using System.Windows.Input;
+﻿using System.Windows;
+using System.Windows.Input;
+using NNTP_NEWS_CLIENT.Application;
+using NNTP_NEWS_CLIENT.InterfaceAdapter;
 
 namespace NNTP_NEWS_CLIENT.Presentation.ViewModel;
 
@@ -42,7 +45,7 @@ public class SettingsViewModel : ViewModelBase
         }
     }
     
-    private string _newsGroup = "rec.audio.pro"; 
+    private string _newsGroup = "dk.test"; 
     public string NewsGroup 
     {
         get { return _newsGroup; }
@@ -52,12 +55,6 @@ public class SettingsViewModel : ViewModelBase
         }  
     }
     
-    
-    public SettingsViewModel()
-    {
-        ViewModelController.Instance.SetCurrentViewModel(typeof(SettingsViewModel));
-    }
-
     private bool IsUsernameValid(string userName)
     {
         return !string.IsNullOrEmpty(userName);
@@ -70,12 +67,10 @@ public class SettingsViewModel : ViewModelBase
     {
         return !string.IsNullOrEmpty(host);
     }
-
     private bool IsPortValid(int port)
     {
         return (port > 0);
     }
-
     private bool IsNewsGroupValid(string newsGroup)
     {
         return !string.IsNullOrEmpty(newsGroup);
@@ -89,15 +84,42 @@ public class SettingsViewModel : ViewModelBase
     }
 
     public ICommand LoginCommand => new CommandBase(EstablishClient, CanEstablishClient);
-    private void EstablishClient(object o)
+    private async void EstablishClient(object o)
     {
         
+        // saving session data for later use.
         ViewModelController.Instance.AddSesionDate("USERNAME", Username);
         ViewModelController.Instance.AddSesionDate("PASSWORD", Password);
         ViewModelController.Instance.AddSesionDate("PORT", Port);
         ViewModelController.Instance.AddSesionDate("HOST", Host);
         ViewModelController.Instance.AddSesionDate("GROUP", NewsGroup);
         
+        // establishing connection
+        var establishConnectionUc = new EstablishConnectionUC(); 
+        var response = await establishConnectionUc.ConnectAsync(Host, Port);
+
+        if (response.ResponseCode != 200)
+        {
+            MessageBox.Show("Unable to establish connection to the host. Please try again.");
+            return;
+        }
+        
+        // authenticating the client. 
+        var authenticated = await establishConnectionUc.AuthenticateUserAsync(Username, Password);
+        if (authenticated.ResponseCode != 281) // 281, login success
+        {
+            MessageBox.Show("Authentication failed. Please try again.");
+            return;
+        } 
+        
+        // the authentication was successful. storing reffrence to client for later use.
+        IClient client = establishConnectionUc.Client;
+        ViewModelController.Instance.AddSesionDate("CLIENT", client);
+        
+        
+        // change view 
+        new BrowserViewModel();
+        ViewModelController.Instance.SetCurrentViewModel(typeof(BrowserViewModel));
         
     }
     private bool CanEstablishClient(object o)

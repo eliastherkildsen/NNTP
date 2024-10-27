@@ -9,7 +9,7 @@ namespace NNTP_NEWS_CLIENT.Application;
 public class LoadGroup
 {
     private Group _group;
-    private string _groupName   = string.Empty;
+    private string _groupName;
     private IClient _client;
     public LoadGroup(IClient client, string groupName)
     {
@@ -17,20 +17,20 @@ public class LoadGroup
         _groupName = groupName;
     }
     
-    public async Task<Group> FetchGroupInfo(IClient client, string groupName)
+    public async Task<Group> FetchGroupInfo()
     {
-        if (!IsGroupNameValid(groupName)) return new Group { GroupName = groupName };
-        var response = await client.SendAsync("group " + groupName);
+        if (!IsGroupNameValid(_groupName)) return new Group { GroupName = _groupName };
+        var response = await _client.SendAsync("group " + _groupName);
         
         // 211 Successful response to the GROUP command, indicating the estimated number of messages in the group (“n”), first and last article numbers (“f” and “l”) and group name (“s”).
         if (response.ResponseCode != 211)
         {
-            Console.WriteLine($"Error on fetching articles for group {groupName}");
-            return new Group { GroupName = groupName };
+            Console.WriteLine($"Error on fetching articles for group {_groupName}");
+            return new Group { GroupName = _groupName };
         }
         
         var data   = response.ResponseData.ToString().Split(" ");
-        string _groupName       = data[0];
+        _groupName = data[0];
         int _totalArticals   = int.Parse(data[1]);
         int _firstArticleID  = int.Parse(data[2]);
         int _lastArticleID   = int.Parse(data[3]);

@@ -1,65 +1,103 @@
 ﻿using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using NNTP_NEWS_CLIENT.Application;
 using NNTP_NEWS_CLIENT.Entitys;
 using NNTP_NEWS_CLIENT.Infrastructure;
 using NNTP_NEWS_CLIENT.InterfaceAdapter;
-using WPF_MVVM_TEMPLATE.Entitys;
 
 namespace NNTP_NEWS_CLIENT.Presentation.ViewModel;
 
 public class BrowserViewModel : ViewModelBase
 {
     
-    private IClient _client;
-    private ObservableCollection<Article> _articleList = new ObservableCollection<Article>();
+    private IClient? _client;
+    private Group? _group;
+    public ObservableCollection<Article> Articles { get; }
 
-    public ObservableCollection<Article> ArticleList
+    public BrowserViewModel()
     {
-        get { return _articleList; }
-        set {
-            _articleList = value; 
-            OnPropertyChanged();
-            
+        Articles = new ObservableCollection<Article>();
+        _client = (IClient) ViewModelController.Instance.GetSesionDate("CLIENT"); 
+        SetupBrowser();
+    }
+
+    public void SortArticles()
+    {
+        
+        
+        
+    }
+
+    private async void SetupBrowser()
+    {
+        
+        _group = await FetchGroup(); 
+        if (_group == null)
+        {
+            MessageBox.Show("Failed to establish connection.");
+            return;
+        }
+
+        var articlesForGroup = await LoadArticles();
+        if (articlesForGroup == null)
+        {
+            MessageBox.Show("Failed to load articles.");
+            return;
+        }
+        
+        
+        foreach (var article in articlesForGroup)
+        {
+            Articles.Add(article);
         }
     }
-    
-    
     
     #region Fetch group
-    public ICommand FetchGroupCommand => new CommandBase(FetchGroup);
 
-    private async void FetchGroup(object obj)
+    private async Task<Group> FetchGroup()
     {
-        var groupName = (string)ViewModelController.Instance.GetSesionDate("GROUP"); 
-        var loadGroup = new LoadGroup(_client, groupName);
-        var group = await loadGroup.FetchGroupInfo(_client, groupName);
-        
-        var loadArticle = new LoadArticle(_client);
-        loadArticle.GetArticlesForGroup();
-        var articles = await loadArticle.GetArticlesForGroup();
-        
-        Console.WriteLine("Fetch command called!");
-        Console.WriteLine($"{articles.Count} articles found when adding to obs. list");
-        
-        foreach (var artical in articles)
+
+        if (_client == null)
         {
-            //Console.WriteLine("Added Artical to obs. list");
-            ArticleList.Add(artical);
+            MessageBox.Show("You haven't connected yet. Please connect first.");
+            return null;
         }
         
+        var groupName = (string)ViewModelController.Instance.GetSesionDate("GROUP"); 
+        var loadGroup = new LoadGroup(_client, groupName);
+        var groupInformation = await loadGroup.FetchGroupInfo(); 
+        return groupInformation;
     }
+
+    private async Task<List<Article>> LoadArticles()
+    {
+
+        if (_group == null || _client == null)
+        {
+            MessageBox.Show("You haven't loaded group yet.");
+            return null;
+        }
+
+        var loadArticle = new LoadArticle(_client, _group);
+        var articlesForGroup = await loadArticle.GetArticlesForGroup();
+        return articlesForGroup;
+        
+
+    }
+    
+    
 
     #endregion
     
     # region Establish Connection 
-    public ICommand EstablishConnectionCommand => new CommandBase(EstablishConnection, CanEstablishConnection);
-
-    private bool CanEstablishConnection(object arg)
+   
+    private bool CanEstablishConnection()
     {
         return HasSessionData();
     }
-    private async void EstablishConnection(object obj)
+    private async Task<IClient> EstablishConnection()
     {
         // Fetching sessiondata
         var username = FetchSessionData("USERNAME");
@@ -67,32 +105,27 @@ public class BrowserViewModel : ViewModelBase
         var host  = FetchSessionData("HOST");
         var port = FetchSessionData("PORT");
         
-        
-        // crating the client.
-        _client = new NntpClient();
-        var establishConnectionUc = new EstablishConnectionUC(_client);
+        var establishConnectionUc = new EstablishConnectionUC();
         
         var response = await establishConnectionUc.ConnectAsync((string) host, (int) port);
         if (response.ResponseCode != 200)
         {
             Console.WriteLine($"Recived respons when trying create connection {response}");
-            return;
+            return null;
         }
         
-        _client = establishConnectionUc.Client;
-
-
         response = await establishConnectionUc.AuthenticateUserAsync((string)username, (string)password); 
         
         if (response.ResponseCode != 281) // (281) connection established
         {
             Console.WriteLine($"Recived respons when trying create connection {response}");
-            return;
+            return null;
         }
         
         // storing the clint for later use. 
         
         Console.WriteLine($"Authenticated user {username.ToString()}, client ready to use");
+        return establishConnectionUc.Client;
         
     }
     private bool HasSessionData()
@@ -118,6 +151,5 @@ public class BrowserViewModel : ViewModelBase
     }
     
     # endregion
-    
-    
+
 }

@@ -15,8 +15,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = ((App)App.Current);
         new SettingsViewModel();
-        new BrowserViewModel();
-        ViewModelController.Instance.SetCurrentViewModel(typeof(BrowserViewModel));
+        ViewModelController.Instance.SetCurrentViewModel(typeof(SettingsViewModel));
         
     }
 

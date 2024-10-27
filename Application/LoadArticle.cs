@@ -6,13 +6,13 @@ namespace NNTP_NEWS_CLIENT.Application;
 
 public class LoadArticle
 {
+    private readonly IClient _client;
+    private readonly Group _group;
     
-    private IClient _client;
-    private Group   _group;
-    
-    public LoadArticle(IClient client)
+    public LoadArticle(IClient client, Group group)
     {
         _client = client;
+        _group = group;
     }
     
     // Parse article information, and split into Article obj. 
@@ -20,15 +20,26 @@ public class LoadArticle
     {
         List<Article> articles = new List<Article>();
         
-        // fetching the articals. 
-        var respons = await GetAllArticlesForGroup(_client, _group);
+        // fetching the articles. 
+        var allArticlesForGroup = await FetchArticlesFromServer(_client, _group);
         
-        // step 1. get articla data. 
-        var loadedArticalString = respons.ResponseData.ToString();
+        // validating response.
+        if (allArticlesForGroup.ResponseCode == 500)
+        {
+            Console.WriteLine("Failed to get articles for group");
+            return articles;
+        }
         
-        //Console.WriteLine($"Found {loadedArticalString.Length} articles");
-
-        IXOverXConverter xConverter = new XOverDecoder(loadedArticalString);
+        // validating that the response has respondent. 
+        if (allArticlesForGroup.ResponseData == null)
+        {
+            Console.WriteLine("Failed to get articles for group. the response is empty");
+            return articles;
+        }
+        
+        var data = allArticlesForGroup.ResponseData.ToString();
+        
+        IXOverXConverter xConverter = new XOverDecoder(data);
 
         articles = xConverter.FetchAllArticles();
         
@@ -38,27 +49,39 @@ public class LoadArticle
         
     }
     
-    public async Task<NntpRespons> GetAllArticlesForGroup(IClient client, Group group)
+    private async Task<NntpRespons> FetchArticlesFromServer(IClient client, Group group)
     {
-        
-        // validating article ids not negativ. 
-        if (group.FirstArticalIndex <= 0 || group.LastArticalIndex <= 0)
+        // validating group
+        if (_group.FirstArticalIndex <= 0 || _group.LastArticalIndex <= 0)
         {
             Console.WriteLine($"Invalid article ID");
             return new NntpRespons(500);
         }
         
         // validating article ids. 
-        if (group.FirstArticalIndex > group.LastArticalIndex)
+        if (_group.FirstArticalIndex > _group.LastArticalIndex)
         {
             Console.WriteLine($"First article id is greater than lastArticleID");
             return new NntpRespons(500);
         }
         
-        var response = await client.SendAsync($"XOVER {group.FirstArticalIndex}-{group.LastArticalIndex}"); //{_firstArticleID}-{_lastArticleID}
-        Console.WriteLine($"Response data type {response.ResponseData.GetType().Name}");
-        Console.WriteLine(response.ResponseData.ToString());
+        var response = await client.SendAsync($"XOVER {group.FirstArticalIndex}-{group.LastArticalIndex}"); 
         return response; 
     }
-    
+
+    public async Task<Article> GetArticleById(string articleId)
+    {
+        var artical = await _client.SendAsync($"BODY {articleId}");
+        
+        // validating that an actual article has been received. 
+        if (artical.ResponseCode != 221 || artical.ResponseData == null)
+        {
+            Console.WriteLine("Failed to get article");
+            return null; 
+        }
+        
+        var data = artical.ResponseData.ToString();
+        Console.WriteLine($"Article ID: {articleId}");
+        return null;
+    }
 }

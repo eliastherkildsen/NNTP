@@ -27,7 +27,7 @@
 
         
         <UniformGrid HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Button Content="Save" Width="80" Command="{Binding LoginCommand}"></Button>
+            <Button Content="Connect" Width="80" Command="{Binding LoginCommand}"></Button>
             <Button Content="Back" Width="80" Command="{Binding ChangeToBrowserViewCommand}"></Button>    
         </UniformGrid>
         
